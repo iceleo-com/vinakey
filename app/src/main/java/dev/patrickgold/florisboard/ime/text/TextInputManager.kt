@@ -238,8 +238,7 @@ class TextInputManager private constructor() : CoroutineScope by MainScope(),
                 KeyboardMode.NUMERIC,
                 KeyboardMode.PHONE,
                 KeyboardMode.PHONE2 -> false
-                else -> keyVariation != KeyVariation.PASSWORD &&
-                        florisboard.prefs.suggestion.enabled// &&
+                else -> keyVariation != KeyVariation.PASSWORD// &&
                 //!instance.inputAttributes.flagTextAutoComplete &&
                 //!instance.inputAttributes.flagTextNoSuggestions
             }

@@ -1,3 +1,4 @@
+
 /*
  * Copyright (C) 2020 Patrick Goldinger
  *
@@ -29,7 +30,6 @@ import android.view.KeyCharacterMap
 import android.view.KeyEvent
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.ExtractedTextRequest
-import android.view.inputmethod.InputConnection
 import android.view.inputmethod.InputContentInfo
 import androidx.annotation.RequiresApi
 import dev.patrickgold.florisboard.ime.text.key.KeyCode
@@ -49,17 +49,444 @@ private const val VARIATION_SELECTOR        =  0xFE0F
 
 // Array which holds all variations for easier checking (convenience only)
 private val emojiVariationArray: Array<Int> = arrayOf(
-    LIGHT_SKIN_TONE,
-    MEDIUM_LIGHT_SKIN_TONE,
-    MEDIUM_SKIN_TONE,
-    MEDIUM_DARK_SKIN_TONE,
-    DARK_SKIN_TONE,
-    RED_HAIR,
-    CURLY_HAIR,
-    WHITE_HAIR,
-    BALD
+        LIGHT_SKIN_TONE,
+        MEDIUM_LIGHT_SKIN_TONE,
+        MEDIUM_SKIN_TONE,
+        MEDIUM_DARK_SKIN_TONE,
+        DARK_SKIN_TONE,
+        RED_HAIR,
+        CURLY_HAIR,
+        WHITE_HAIR,
+        BALD
 )
 
+// VinaKey characters
+private val baseCharMap = mapOf(
+    "Á" to "A",
+    "À" to "A",
+    "Ả" to "A",
+    "Ã" to "A",
+    "Ạ" to "A",
+
+    "á" to "a",
+    "à" to "a",
+    "ả" to "a",
+    "ã" to "a",
+    "ạ" to "a",
+
+    "Ắ" to "Ă",
+    "Ằ" to "Ă",
+    "Ẳ" to "Ă",
+    "Ẵ" to "Ă",
+    "Ặ" to "Ă",
+
+    "ắ" to "ă",
+    "ằ" to "ă",
+    "ẳ" to "ă",
+    "ẵ" to "ă",
+    "ặ" to "ă",
+
+    "Ấ" to "Â",
+    "Ầ" to "Â",
+    "Ẩ" to "Â",
+    "Ẫ" to "Â",
+    "Ậ" to "Â",
+
+    "ấ" to "â",
+    "ầ" to "â",
+    "ẩ" to "â",
+    "ẫ" to "â",
+    "ậ" to "â",
+
+    "É" to "E",
+    "È" to "E",
+    "Ẻ" to "E",
+    "Ẽ" to "E",
+    "Ẹ" to "E",
+
+    "é" to "e",
+    "è" to "e",
+    "ẻ" to "e",
+    "ẽ" to "e",
+    "ẹ" to "e",
+
+    "Ế" to "Ê",
+    "Ề" to "Ê",
+    "Ể" to "Ê",
+    "Ễ" to "Ê",
+    "Ệ" to "Ê",
+
+    "ế" to "ê",
+    "ề" to "ê",
+    "ể" to "ê",
+    "ễ" to "ê",
+    "ệ" to "ê",
+
+    "Í" to "I",
+    "Ì" to "I",
+    "Ỉ" to "I",
+    "Ĩ" to "I",
+    "Ị" to "I",
+
+    "í" to "i",
+    "ì" to "i",
+    "ỉ" to "i",
+    "ĩ" to "i",
+    "ị" to "i",
+
+    "Ó" to "O",
+    "Ò" to "O",
+    "Ỏ" to "O",
+    "Õ" to "O",
+    "Ọ" to "O",
+
+    "ó" to "o",
+    "ò" to "o",
+    "ỏ" to "o",
+    "õ" to "o",
+    "ọ" to "o",
+
+    "Ố" to "Ô",
+    "Ồ" to "Ô",
+    "Ổ" to "Ô",
+    "Ỗ" to "Ô",
+    "Ộ" to "Ô",
+
+    "ố" to "ô",
+    "ồ" to "ô",
+    "ổ" to "ô",
+    "ỗ" to "ô",
+    "ộ" to "ô",
+
+    "Ớ" to "Ơ",
+    "Ờ" to "Ơ",
+    "Ở" to "Ơ",
+    "Ỡ" to "Ơ",
+    "Ợ" to "Ơ",
+
+    "ớ" to "ơ",
+    "ờ" to "ơ",
+    "ở" to "ơ",
+    "ỡ" to "ơ",
+    "ợ" to "ơ",
+
+    "Ú" to "U",
+    "Ù" to "U",
+    "Ủ" to "U",
+    "Ũ" to "U",
+    "Ụ" to "U",
+
+    "ú" to "u",
+    "ù" to "u",
+    "ủ" to "u",
+    "ũ" to "u",
+    "ụ" to "u",
+
+    "Ứ" to "Ư",
+    "Ừ" to "Ư",
+    "Ử" to "Ư",
+    "Ữ" to "Ư",
+    "Ự" to "Ư",
+
+    "ứ" to "ư",
+    "ừ" to "ư",
+    "ử" to "ư",
+    "ữ" to "ư",
+    "ự" to "ư",
+
+    "Ý" to "Y",
+    "Ỳ" to "Y",
+    "Ỷ" to "Y",
+    "Ỹ" to "Y",
+    "Ỵ" to "Y",
+
+    "ý" to "y",
+    "ỳ" to "y",
+    "ỷ" to "y",
+    "ỹ" to "y",
+    "ỵ" to "y"
+)
+
+private val priorityChars = arrayOf(
+    arrayOf(
+        "A",
+        "a",
+        "Ă",
+        "ă",
+        "Â",
+        "â"
+    ),
+    arrayOf(
+        "E",
+        "e",
+        "Ê",
+        "ê"
+    ),
+    arrayOf(
+        "O",
+        "o",
+        "Ô",
+        "ô",
+        "Ơ",
+        "ơ"
+    ),
+    arrayOf(
+        "Y",
+        "y"
+    ),
+    arrayOf(
+        "U",
+        "u",
+        "Ư",
+        "ư"
+    ),
+    arrayOf(
+        "I",
+        "i",
+    )
+)
+private val combineChar1Map = mapOf(
+    "A" to "Á",
+    "a" to "á",
+    "Ă" to "Ắ",
+    "ă" to "ắ",
+    "Â" to "Ấ",
+    "â" to "ấ",
+    "E" to "É",
+    "e" to "é",
+    "Ê" to "Ế",
+    "ê" to "ế",
+    "I" to "Í",
+    "i" to "í",
+    "O" to "Ó",
+    "o" to "ó",
+    "Ô" to "Ố",
+    "ô" to "ố",
+    "Ơ" to "Ớ",
+    "ơ" to "ớ",
+    "U" to "Ú",
+    "u" to "ú",
+    "Ư" to "Ứ",
+    "ư" to "ứ",
+    "Y" to "Ý",
+    "y" to "ý"
+)
+private val combineChar2Map = mapOf(
+    "A" to "À",
+    "a" to "à",
+    "Ă" to "Ằ",
+    "ă" to "ằ",
+    "Â" to "Ầ",
+    "â" to "ầ",
+    "E" to "È",
+    "e" to "è",
+    "Ê" to "Ề",
+    "ê" to "ề",
+    "I" to "Ì",
+    "i" to "ì",
+    "O" to "Ò",
+    "o" to "ò",
+    "Ô" to "Ồ",
+    "ô" to "ồ",
+    "Ơ" to "Ờ",
+    "ơ" to "ờ",
+    "U" to "Ù",
+    "u" to "ù",
+    "Ư" to "Ừ",
+    "ư" to "ừ",
+    "Y" to "Ỳ",
+    "y" to "ỳ"
+)
+private val combineChar3Map = mapOf(
+    "A" to "Ả",
+    "a" to "ả",
+    "Ă" to "Ẳ",
+    "ă" to "ẳ",
+    "Â" to "Ẩ",
+    "â" to "ẩ",
+    "E" to "Ẻ",
+    "e" to "ẻ",
+    "Ê" to "Ể",
+    "ê" to "ể",
+    "I" to "Ỉ",
+    "i" to "ỉ",
+    "O" to "Ỏ",
+    "o" to "ỏ",
+    "Ô" to "Ổ",
+    "ô" to "ổ",
+    "Ơ" to "Ở",
+    "ơ" to "ở",
+    "U" to "Ủ",
+    "u" to "ủ",
+    "Ư" to "Ử",
+    "ư" to "ử",
+    "Y" to "Ỷ",
+    "y" to "ỷ"
+)
+private val combineChar4Map = mapOf(
+    "A" to "Ã",
+    "a" to "ã",
+    "Ă" to "Ẵ",
+    "ă" to "ẵ",
+    "Â" to "Ẫ",
+    "â" to "ẫ",
+    "E" to "Ẽ",
+    "e" to "ẽ",
+    "Ê" to "Ễ",
+    "ê" to "ễ",
+    "I" to "Ĩ",
+    "i" to "ĩ",
+    "O" to "Õ",
+    "o" to "õ",
+    "Ô" to "Ỗ",
+    "ô" to "ỗ",
+    "Ơ" to "Ỡ",
+    "ơ" to "ỡ",
+    "U" to "Ũ",
+    "u" to "ũ",
+    "Ư" to "Ữ",
+    "ư" to "ữ",
+    "Y" to "Ỹ",
+    "y" to "ỹ"
+)
+private val combineChar5Map = mapOf(
+    "A" to "Ạ",
+    "a" to "ạ",
+    "Ă" to "Ặ",
+    "ă" to "ặ",
+    "Â" to "Ậ",
+    "â" to "ậ",
+    "E" to "Ẹ",
+    "e" to "ẹ",
+    "Ê" to "Ệ",
+    "ê" to "ệ",
+    "I" to "Ị",
+    "i" to "ị",
+    "O" to "Ọ",
+    "o" to "ọ",
+    "Ô" to "Ộ",
+    "ô" to "ộ",
+    "Ơ" to "Ợ",
+    "ơ" to "ợ",
+    "U" to "Ụ",
+    "u" to "ụ",
+    "Ư" to "Ự",
+    "ư" to "ự",
+    "Y" to "Ỵ",
+    "y" to "ỵ"
+)
+private val combineChar6Map = mapOf(
+    "A" to "Â",
+    "a" to "â",
+    "Á" to "Ấ",
+    "á" to "ấ",
+    "À" to "Ầ",
+    "à" to "ầ",
+    "Ả" to "Ẩ",
+    "ả" to "ẩ",
+    "Ã" to "Ẫ",
+    "ã" to "ẫ",
+    "Ạ" to "Ậ",
+    "ạ" to "ậ",
+    "E" to "Ê",
+    "e" to "ê",
+    "É" to "Ế",
+    "é" to "ế",
+    "È" to "Ề",
+    "è" to "ề",
+    "Ẻ" to "Ể",
+    "ẻ" to "ể",
+    "Ẽ" to "Ễ",
+    "ẽ" to "ễ",
+    "Ẹ" to "Ệ",
+    "ẹ" to "ệ",
+    "O" to "Ô",
+    "o" to "ô",
+    "Ó" to "Ố",
+    "ó" to "ố",
+    "Ò" to "Ồ",
+    "ò" to "ồ",
+    "Ỏ" to "Ổ",
+    "ỏ" to "ổ",
+    "Õ" to "Ỗ",
+    "õ" to "ỗ",
+    "Ọ" to "Ộ",
+    "ọ" to "Ộ"
+)
+private val combineChar7Map = mapOf(
+    "UO" to "ƯƠ",
+    "uo" to "ươ",
+    "UÓ" to "ƯỚ",
+    "uó" to "ướ",
+    "UÒ" to "ƯỜ",
+    "uò" to "ườ",
+    "UỎ" to "ƯỞ",
+    "uỏ" to "ưở",
+    "UÕ" to "ƯỠ",
+    "uõ" to "ưỡ",
+    "UỌ" to "ƯỢ",
+    "uọ" to "ượ",
+    "O" to "Ơ",
+    "o" to "ơ",
+    "Ó" to "Ớ",
+    "ó" to "ớ",
+    "Ò" to "Ờ",
+    "ò" to "ờ",
+    "Ỏ" to "Ở",
+    "ỏ" to "ở",
+    "Õ" to "Ỡ",
+    "õ" to "ỡ",
+    "Ọ" to "Ợ",
+    "ọ" to "ợ",
+    "U" to "Ư",
+    "u" to "ư",
+    "Ú" to "Ứ",
+    "ú" to "ứ",
+    "Ù" to "Ừ",
+    "ù" to "ừ",
+    "Ủ" to "Ử",
+    "ủ" to "ử",
+    "Ũ" to "Ữ",
+    "ũ" to "ữ",
+    "Ụ" to "Ự",
+    "ụ" to "ự"
+)
+private val combineChar8Map = mapOf(
+    "A" to "Ă",
+    "a" to "ă",
+    "Á" to "Ắ",
+    "á" to "ắ",
+    "À" to "Ằ",
+    "à" to "ằ",
+    "Ả" to "Ẳ",
+    "ả" to "ẳ",
+    "Ã" to "Ẵ",
+    "ã" to "ẵ",
+    "Ạ" to "Ặ",
+    "ạ" to "ặ",
+)
+private val combineChar9Map = mapOf(
+    "D" to "Đ",
+    "d" to "đ"
+)
+private val combineCharGMap = mapOf(
+    "NG" to "Ŋ",
+    "Ng" to "Ŋ",
+    "ng" to "ŋ"
+)
+private val combineCharHMap = mapOf(
+    "NH" to "Ñ",
+    "Nh" to "Ñ",
+    "nh" to "ñ",
+    "ŊH" to "Ŋ",
+    "Ŋh" to "Ŋ",
+    "ŋh" to "ŋ"
+)
+private val combineCharIMap = mapOf(
+    "GI" to "J",
+    "Gi" to "J",
+    "gi" to "j"
+)
 /**
  * Class which holds information relevant to an editor instance like the input [cachedText], [selection],
  * [inputAttributes], [imeOptions], etc. This class is thought to be an improved [EditorInfo]
@@ -71,7 +498,7 @@ class EditorInstance private constructor(private val ims: InputMethodService?) {
         get() {
             val ic = ims?.currentInputConnection ?: return InputAttributes.CapsMode.NONE
             return InputAttributes.CapsMode.fromFlags(
-                ic.getCursorCapsMode(inputAttributes.capsMode.toFlags())
+                    ic.getCursorCapsMode(inputAttributes.capsMode.toFlags())
             )
         }
     var currentWord: Region = Region(this)
@@ -142,8 +569,8 @@ class EditorInstance private constructor(private val ims: InputMethodService?) {
      * Event handler which reacts to selection updates coming from the target app's editor.
      */
     fun onUpdateSelection(
-        oldSelStart: Int, oldSelEnd: Int,
-        newSelStart: Int, newSelEnd: Int
+            oldSelStart: Int, oldSelEnd: Int,
+            newSelStart: Int, newSelEnd: Int
     ) {
         updateEditorState()
         isNewSelectionInBoundsOfOld =
@@ -243,6 +670,7 @@ class EditorInstance private constructor(private val ims: InputMethodService?) {
             reevaluateCurrentWord()
             if (isComposingEnabled) {
                 markComposingRegion(currentWord)
+                vinaKey(text)
             }
             ic.endBatchEdit()
             true
@@ -317,7 +745,7 @@ class EditorInstance private constructor(private val ims: InputMethodService?) {
     private fun getWordsInString(string: String):List<MatchResult>{
         val wordRegexPattern = "[\\p{L}]+".toRegex()
         return wordRegexPattern.findAll(
-            string
+                string
         ).toList()
     }
 
@@ -512,13 +940,13 @@ class EditorInstance private constructor(private val ims: InputMethodService?) {
     fun sendSystemKeyEventAlt(keyCode: Int): Boolean {
         val ic = ims?.currentInputConnection ?: return false
         return ic.sendKeyEvent(
-            KeyEvent(
-                0,
-                1,
-                KeyEvent.ACTION_DOWN, keyCode,
-                0,
-                KeyEvent.META_ALT_LEFT_ON
-            )
+                KeyEvent(
+                        0,
+                        1,
+                        KeyEvent.ACTION_DOWN, keyCode,
+                        0,
+                        KeyEvent.META_ALT_LEFT_ON
+                )
         )
     }
 
@@ -555,30 +983,30 @@ class EditorInstance private constructor(private val ims: InputMethodService?) {
         val ic = ims?.currentInputConnection ?: return
         val eventTime = SystemClock.uptimeMillis()
         ic.sendKeyEvent(
-            KeyEvent(
-                eventTime,
-                eventTime,
-                KeyEvent.ACTION_DOWN,
-                keyEventCode,
-                0,
-                metaState,
-                KeyCharacterMap.VIRTUAL_KEYBOARD,
-                0,
-                KeyEvent.FLAG_SOFT_KEYBOARD or KeyEvent.FLAG_KEEP_TOUCH_MODE
-            )
+                KeyEvent(
+                        eventTime,
+                        eventTime,
+                        KeyEvent.ACTION_DOWN,
+                        keyEventCode,
+                        0,
+                        metaState,
+                        KeyCharacterMap.VIRTUAL_KEYBOARD,
+                        0,
+                        KeyEvent.FLAG_SOFT_KEYBOARD or KeyEvent.FLAG_KEEP_TOUCH_MODE
+                )
         )
         ic.sendKeyEvent(
-            KeyEvent(
-                eventTime,
-                SystemClock.uptimeMillis(),
-                KeyEvent.ACTION_UP,
-                keyEventCode,
-                0,
-                metaState,
-                KeyCharacterMap.VIRTUAL_KEYBOARD,
-                0,
-                KeyEvent.FLAG_SOFT_KEYBOARD or KeyEvent.FLAG_KEEP_TOUCH_MODE
-            )
+                KeyEvent(
+                        eventTime,
+                        SystemClock.uptimeMillis(),
+                        KeyEvent.ACTION_UP,
+                        keyEventCode,
+                        0,
+                        metaState,
+                        KeyCharacterMap.VIRTUAL_KEYBOARD,
+                        0,
+                        KeyEvent.FLAG_SOFT_KEYBOARD or KeyEvent.FLAG_KEEP_TOUCH_MODE
+                )
         )
     }
 
@@ -617,8 +1045,8 @@ class EditorInstance private constructor(private val ims: InputMethodService?) {
         if (selection.start <= 0)
             return false
         val stringBeforeSelection = cachedText.substring(
-            0,
-            selection.start
+                0,
+                selection.start
         )
         getWordsInString(stringBeforeSelection).last().range.apply {
             setSelection(first, selection.end)
@@ -636,8 +1064,8 @@ class EditorInstance private constructor(private val ims: InputMethodService?) {
         if (selection.start >= selection.end)
             return false
         val stringInsideSelection = cachedText.substring(
-            selection.start,
-            selection.end
+                selection.start,
+                selection.end
         )
         getWordsInString(stringInsideSelection).first().range.apply {
             setSelection(selection.start + last + 1, selection.end)
@@ -747,7 +1175,7 @@ class EditorInstance private constructor(private val ims: InputMethodService?) {
      * TODO: currently only supports en-US
      */
     private fun reevaluateCurrentWord() {
-        val regex = "[^\\p{L}]".toRegex()
+        val regex = "[^\\p{L}\\p{N}]".toRegex()
         reevaluateCurrentWord(regex)
     }
 
@@ -759,7 +1187,7 @@ class EditorInstance private constructor(private val ims: InputMethodService?) {
     private fun updateEditorState() {
         val ic = ims?.currentInputConnection
         val et = ic?.getExtractedText(
-            ExtractedTextRequest(), 0
+                ExtractedTextRequest(), 0
         )
         val text = et?.text
         if (ic == null || et == null || text == null) {
@@ -778,6 +1206,149 @@ class EditorInstance private constructor(private val ims: InputMethodService?) {
             }
         }
         reevaluateCurrentWord()
+    }
+
+    private fun vinaKeyVniReplace(key: String, input: String, combineCharMap: Map<String, String>): String {
+        if ("\\d+${key}\\s*$".toRegex().containsMatchIn(input) || "${key}${key}$".toRegex().containsMatchIn(input)) {
+            return  input
+        }
+
+        var output = input
+        var fnKeyNum = (key.single().toByte().toInt() - 48)
+
+        loop@ for ((k, v) in combineCharMap) {
+            if ("${v}${key}$".toRegex().containsMatchIn(output)) {
+                output = output.replace("${v}${key}$".toRegex(), "${k}${key}")
+                break@loop
+            }
+        }
+
+        if (output == input) {
+            if (fnKeyNum > 0 && fnKeyNum < 6) {
+                loop@ for (char in input) {
+                    val search = char.toString()
+                    val replacement = baseCharMap[search].toString()
+                    if (replacement != "null") {
+                        output = output.replace(search, replacement)
+                    }
+                }
+
+                loop@ for (priorityChar in priorityChars) {
+                    var isFound = false
+                    loop1@ for (char in priorityChar) {
+                        val start: Int = output.lastIndexOf(char.toString())
+                        if (start > -1) {
+                            val replacement = combineCharMap[char.toString()].toString()
+                            val builder = StringBuilder()
+                            builder.append(output.substring(0, start))
+                            builder.append(replacement)
+                            builder.append(output.substring(start + char.length))
+                            output = builder.toString()
+                            isFound = true
+                            break@loop1
+                        }
+                    }
+
+                    if (isFound) {
+                        break@loop
+                    }
+                }
+            } else {
+                loop@ for ((k, v) in combineCharMap) {
+                    val start: Int = output.lastIndexOf(k.toString())
+                    if (start > -1) {
+                        val builder = StringBuilder()
+                        builder.append(output.substring(0, start))
+                        builder.append(v.toString())
+                        builder.append(output.substring(start + k.length))
+                        output = builder.toString()
+                        break@loop
+                    }
+                }
+            }
+
+            if (output != input) {
+                output = output.replace("${key}$".toRegex(), "")
+            }
+        }
+
+        return output
+    }
+
+    /**
+     * Vni input method, get key and original string
+     *
+     * @return corrected string of original string
+     */
+    private fun vinaKeyVni(key: String, input: String): String {
+        var output = input
+
+        when (key) {
+            "1" -> {
+                output = vinaKeyVniReplace(key, input, combineChar1Map)
+            }
+            "2" -> {
+                output = vinaKeyVniReplace(key, input, combineChar2Map)
+            }
+            "3" -> {
+                output = vinaKeyVniReplace(key, input, combineChar3Map)
+            }
+            "4" -> {
+                output = vinaKeyVniReplace(key, input, combineChar4Map)
+            }
+            "5" -> {
+                output = vinaKeyVniReplace(key, input, combineChar5Map)
+            }
+            "6" -> {
+                output = vinaKeyVniReplace(key, input, combineChar6Map)
+            }
+            "7" -> {
+                output = vinaKeyVniReplace(key, input, combineChar7Map)
+            }
+            "8" -> {
+                output = vinaKeyVniReplace(key, input, combineChar8Map)
+            }
+            "9" -> {
+                output = vinaKeyVniReplace(key, input, combineChar9Map)
+            }
+            "g" -> {
+                output = vinaKeyVniReplace(key, input, combineCharGMap)
+            }
+            "G" -> {
+                output = vinaKeyVniReplace(key, input, combineCharGMap)
+            }
+            "h" -> {
+                output = vinaKeyVniReplace(key, input, combineCharHMap)
+            }
+            "H" -> {
+                output = vinaKeyVniReplace(key, input, combineCharHMap)
+            }
+            "i" -> {
+                output = vinaKeyVniReplace(key, input, combineCharIMap)
+            }
+            "I" -> {
+                output = vinaKeyVniReplace(key, input, combineCharIMap)
+            }
+        }
+
+        return  output
+    }
+
+    /**
+     * Gets the current text from the app's editor view.
+     *
+     * @return The target editor's content string.
+     */
+    private fun vinaKey(input: String): Boolean {
+        val ic = ims?.currentInputConnection ?: return false
+        val originalText = currentWord.text.toString()
+        val correctedText = vinaKeyVni(input, originalText)
+
+        if (correctedText != originalText) {
+            ic.setComposingText(correctedText, 1)
+            markComposingRegion(currentWord)
+        }
+        return true;
     }
 }
 
